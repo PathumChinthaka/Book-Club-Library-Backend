@@ -5,7 +5,7 @@ const LendingSchema = new Schema({
   bookId: { type: Types.ObjectId, ref: 'Book', required: true },
   borrowedAt: { type: Date, default: Date.now },
   dueDate: { type: Date, required: true },
-  returnedAt: { type: Date, default: null }
+  returnedDate: { type: Date, default: null }
 });
 
 export const Lending = model('Lending', LendingSchema);
