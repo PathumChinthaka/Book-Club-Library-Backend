@@ -1,3 +1,5 @@
+import dotenv from 'dotenv' 
+dotenv.config()
 import { supabase } from "../../util/supabase/supabase.client";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
