@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { User } from "../models/User";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../service/auth/jwt.service"
 
-export const register = async (req: Request, res: Response) => {
+export const registerUser = async (req: Request, res: Response) => {
   try {
     const { firstName, lastName, email, phone, password, role } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -25,7 +25,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const userLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -51,7 +51,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const refresh = (req: Request, res: Response) => {
+export const refreshToken = (req: Request, res: Response) => {
   try {
     const token = req.cookies.refreshToken;
     if (!token) return res.status(401).json({ message: "No token provided" });
@@ -65,7 +65,7 @@ export const refresh = (req: Request, res: Response) => {
   }
 };
 
-export const logout = (_req: Request, res: Response) => {
+export const logoutUser = (_req: Request, res: Response) => {
   res.clearCookie("refreshToken");
   res.json({ message: "Logged out successfully" });
 };
