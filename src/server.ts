@@ -7,6 +7,7 @@ import authRoute from './routes/auth.route'
 import { authenticateToken } from './middleware/auth.middleware';
 import rootRouter from './routes/root.router'
 import { errorHandler } from "./middleware/error.handler.middleware";
+import { auditLogHandler } from "./middleware/audit.log.middleware";
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Handle Audit Log
+app.use(auditLogHandler);
 
 // Authentication Route
 app.use("/api/auth", authRoute);
