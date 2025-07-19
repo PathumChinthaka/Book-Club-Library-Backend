@@ -1,7 +1,11 @@
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import { User } from "../models/User";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../service/auth/jwt.service"
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../service/auth/jwt.service";
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -40,12 +44,22 @@ export const userLogin = async (req: Request, res: Response) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.json({ accessToken, user });
+    res.json({
+      accessToken,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        createdOn: user.createdOn,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: "Login error", error });
   }
@@ -57,7 +71,10 @@ export const refreshToken = (req: Request, res: Response) => {
     if (!token) return res.status(401).json({ message: "No token provided" });
 
     const payload = verifyRefreshToken(token) as any;
-    const newAccessToken = generateAccessToken({ id: payload.id, role: payload.role });
+    const newAccessToken = generateAccessToken({
+      id: payload.id,
+      role: payload.role,
+    });
 
     res.json({ accessToken: newAccessToken });
   } catch (error) {
