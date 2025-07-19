@@ -23,13 +23,13 @@ app.use(cookieParser());
 app.use(auditLogHandler);
 
 // Authentication Route
-app.use("/api/auth", authRoute);
+app.use("/api/v1/auth", authRoute);
 
 //Auth middleware
 app.use(authenticateToken);
 
 // Root router
-app.use("/api", rootRouter);
+app.use("/api/v1", rootRouter);
 
 // Error handler middleware
 app.use(errorHandler);
