@@ -9,9 +9,8 @@ export const errorHandler = (
 ) => {
   if (err instanceof ThrowError) {
     return res.status(err.statusCode).json({
-      status: 'fail',
+      status: 400,
       message: err.message,
-      data: err.data,
     });
   }
 

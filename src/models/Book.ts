@@ -5,7 +5,7 @@ const BookSchema = new Schema({
   author: { type: String, required: true },
   category: { type: String, required: true },
   isbn: { type: String, required: true, unique: true },
-  publisher: { type: String },
+  publisher: { type: String, required: true, },
   publicationYear: { type: Number },
   copiesTotal: { type: Number, required: true },
   copiesAvailable: { type: Number, required: true },

@@ -5,7 +5,9 @@ export const createReader = async (req: Request, res: Response) => {
   try {
     const reader = new Reader(req.body);
     await reader.save();
-    res.status(201).json(reader);
+    res.status(201).json({
+      id: reader._id,
+    });
   } catch (error) {
     res.status(400).json({ message: "Error creating reader", error });
   }

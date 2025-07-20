@@ -4,7 +4,9 @@ import { Book } from "../models/Book";
 export const createBook = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const book = await Book.create(req.body);
-    res.status(201).json(book);
+    res.status(201).json({
+      id:book._id
+    });
   } catch (error) {
     next(error);
   }
