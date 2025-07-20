@@ -13,10 +13,36 @@ export const createReader = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllReaders = async (_req: Request, res: Response) => {
+export const getAllReaders = async (req: Request, res: Response) => {
   try {
-    const readers = await Reader.find();
-    res.status(200).json(readers);
+    const {
+      page = 1,
+      pageSize = 10,
+      firstName,
+      lastName,
+      email,
+    } = req.query;
+
+    const query: any = {};
+
+    if (firstName) query.firstName = { $regex: firstName, $options: "i" };
+    if (lastName) query.lastName = { $regex: lastName, $options: "i" };
+    if (email) query.email = { $regex: email, $options: "i" };
+
+    const skip = (Number(page) - 1) * Number(pageSize);
+
+    const [readers, total] = await Promise.all([
+      Reader.find(query).skip(skip).limit(Number(pageSize)),
+      Reader.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      data: readers,
+      total,
+      page: Number(page),
+      pageSize: Number(pageSize),
+      totalPages: Math.ceil(total / Number(pageSize)),
+    });
   } catch (error) {
     res.status(500).json({ message: "Error retrieving readers", error });
   }

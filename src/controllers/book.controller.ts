@@ -14,8 +14,34 @@ export const createBook = async (req: Request, res: Response, next: NextFunction
 
 export const getBooks = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const books = await Book.find();
-    res.status(200).json(books);
+    const {
+      page = 1,
+      pageSize = 10,
+      title,
+      author,
+      category,
+    } = req.query;
+
+    const query: any = {};
+
+    if (title) query.title = { $regex: title, $options: "i" };
+    if (author) query.author = { $regex: author, $options: "i" };
+    if (category) query.category = { $regex: category, $options: "i" };
+
+    const skip = (Number(page) - 1) * Number(pageSize);
+
+    const [books, total] = await Promise.all([
+      Book.find(query).skip(skip).limit(Number(pageSize)),
+      Book.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      data: books,
+      total,
+      page: Number(page),
+      pageSize: Number(pageSize),
+      totalPages: Math.ceil(total / Number(pageSize)),
+    });
   } catch (error) {
     next(error);
   }
