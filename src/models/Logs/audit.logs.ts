@@ -12,19 +12,19 @@ const AuditLogSchema = new Schema(
     },
     params: {
       type: String,
-      required: true,
+      required: false,
     },
     query: {
       type: String,
-      required: true,
+      required: false,
     },
     payload: {
       type: String,
-      required: true,
+      required: false,
     },
     response: {
       type: String,
-      required: true,
+      required: false,
     },
   },
   {
