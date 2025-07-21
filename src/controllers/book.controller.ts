@@ -36,10 +36,10 @@ export const getBooks = async (req: Request, res: Response, next: NextFunction) 
     ]);
 
     res.status(200).json({
-      data: books,
-      total,
       page: Number(page),
       pageSize: Number(pageSize),
+      data: books,
+      total,
       totalPages: Math.ceil(total / Number(pageSize)),
     });
   } catch (error) {

@@ -37,10 +37,10 @@ export const getAllReaders = async (req: Request, res: Response) => {
     ]);
 
     res.status(200).json({
-      data: readers,
-      total,
       page: Number(page),
       pageSize: Number(pageSize),
+      data: readers,
+      total,
       totalPages: Math.ceil(total / Number(pageSize)),
     });
   } catch (error) {
