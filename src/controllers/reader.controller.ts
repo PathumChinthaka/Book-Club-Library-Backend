@@ -1,12 +1,25 @@
 import { Request, Response } from "express";
 import { Reader } from "../models/Reader";
+import { User } from "../models/User";
+import { UserRole } from "../types/enum/userRole.enum";
+import { ActiveStatus } from "../types/enum/activeStatusEnum";
 
 export const createReader = async (req: Request, res: Response) => {
   try {
-    const reader = new Reader(req.body);
-    await reader.save();
+    const { firstName, lastName, email, phone, address } = req.body;
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      phone,
+      address,
+      role: UserRole.Reader,
+    });
+
+    await user.save();
+
     res.status(201).json({
-      id: reader._id,
+      id: user._id,
     });
   } catch (error) {
     res.status(400).json({ message: "Error creating reader", error });
@@ -15,15 +28,12 @@ export const createReader = async (req: Request, res: Response) => {
 
 export const getAllReaders = async (req: Request, res: Response) => {
   try {
-    const {
-      page = 1,
-      pageSize = 10,
-      firstName,
-      lastName,
-      email,
-    } = req.query;
+    const { page = 1, pageSize = 10, firstName, lastName, email } = req.query;
 
-    const query: any = {};
+    const query: any = {
+      role: UserRole.Reader,
+      activeStatus: ActiveStatus.Active,
+    };
 
     if (firstName) query.firstName = { $regex: firstName, $options: "i" };
     if (lastName) query.lastName = { $regex: lastName, $options: "i" };
@@ -32,8 +42,12 @@ export const getAllReaders = async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(pageSize);
 
     const [readers, total] = await Promise.all([
-      Reader.find(query).skip(skip).limit(Number(pageSize)),
-      Reader.countDocuments(query),
+      User.find(query)
+        .skip(skip)
+        .limit(Number(pageSize))
+        .sort({ createdOn: -1 })
+        .select("-password"),
+      User.countDocuments(query),
     ]);
 
     res.status(200).json({
@@ -51,14 +65,24 @@ export const getAllReaders = async (req: Request, res: Response) => {
 export const updateReader = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updatedReader = await Reader.findByIdAndUpdate(
-      id,
-      { ...req.body, updatedOn: new Date() },
-      { new: true }
+
+    const updateData = { ...req.body };
+    delete updateData.password;
+    updateData.updatedOn = new Date();
+
+    const updatedReader = await User.findOneAndUpdate(
+      { _id: id, role: UserRole.Reader },
+      updateData,
+      {
+        new: true,
+        select: "-password -role -activeStatus",
+      }
     );
+
     if (!updatedReader) {
       return res.status(404).json({ message: "Reader not found" });
     }
+
     res.status(200).json(updatedReader);
   } catch (error) {
     res.status(400).json({ message: "Error updating reader", error });
@@ -68,11 +92,21 @@ export const updateReader = async (req: Request, res: Response) => {
 export const deleteReader = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const deletedReader = await Reader.findByIdAndDelete(id);
+
+    const deletedReader = await User.findOneAndUpdate(
+      { _id: id, role: UserRole.Reader },
+      {
+        activeStatus: ActiveStatus.Deleted,
+        updatedOn: new Date(),
+      },
+      { new: true }
+    );
+
     if (!deletedReader) {
       return res.status(404).json({ message: "Reader not found" });
     }
-    res.status(200).json({ message: "Reader deleted successfully" });
+
+    res.sendStatus(204);
   } catch (error) {
     res.status(400).json({ message: "Error deleting reader", error });
   }

@@ -1,26 +1,28 @@
 import { Request, Response, NextFunction } from "express";
 import { Book } from "../models/Book";
 
-export const createBook = async (req: Request, res: Response, next: NextFunction) => {
+export const createBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const book = await Book.create(req.body);
     res.status(201).json({
-      id:book._id
+      id: book._id,
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const getBooks = async (req: Request, res: Response, next: NextFunction) => {
+export const getBooks = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const {
-      page = 1,
-      pageSize = 10,
-      title,
-      author,
-      category,
-    } = req.query;
+    const { page = 1, pageSize = 10, title, author, category } = req.query;
 
     const query: any = {};
 
@@ -31,7 +33,10 @@ export const getBooks = async (req: Request, res: Response, next: NextFunction) 
     const skip = (Number(page) - 1) * Number(pageSize);
 
     const [books, total] = await Promise.all([
-      Book.find(query).skip(skip).limit(Number(pageSize)),
+      Book.find(query)
+        .skip(skip)
+        .limit(Number(pageSize))
+        .sort({ createdOn: -1 }),
       Book.countDocuments(query),
     ]);
 
@@ -47,7 +52,11 @@ export const getBooks = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-export const getBookById = async (req: Request, res: Response, next: NextFunction) => {
+export const getBookById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ message: "Book not found" });
@@ -57,9 +66,15 @@ export const getBookById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const updateBook = async (req: Request, res: Response, next: NextFunction) => {
+export const updateBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
     if (!book) return res.status(404).json({ message: "Book not found" });
     res.status(200).json(book);
   } catch (error) {
@@ -67,7 +82,11 @@ export const updateBook = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const book = await Book.findByIdAndDelete(req.params.id);
     if (!book) return res.status(404).json({ message: "Book not found" });

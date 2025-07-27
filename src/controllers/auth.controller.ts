@@ -6,6 +6,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../service/auth/jwt.service";
+import { ThrowError } from "../util/error/error";
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -61,24 +62,40 @@ export const userLogin = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Login error", error });
+    throw new ThrowError("Log in failed", 500);
   }
 };
 
-export const refreshToken = (req: Request, res: Response) => {
+export const refreshToken = async (req: Request, res: Response) => {
   try {
     const token = req.cookies.refreshToken;
     if (!token) return res.status(401).json({ message: "No token provided" });
 
     const payload = verifyRefreshToken(token) as any;
+
+    const user = await User.findOne({ _id: payload?.id });
+
+    if (!user) {
+      throw new ThrowError("User Not Found", 404);
+    }
+
     const newAccessToken = generateAccessToken({
       id: payload.id,
       role: payload.role,
     });
 
-    res.json({ accessToken: newAccessToken });
+    res.json({
+      accessToken: newAccessToken,
+      user: {
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        role: user?.role,
+        createdOn: user?.createdOn,
+      },
+    });
   } catch (error) {
-    res.status(403).json({ message: "Invalid refresh token", error });
+    throw new ThrowError("Invalid refresh token", 403);
   }
 };
 
