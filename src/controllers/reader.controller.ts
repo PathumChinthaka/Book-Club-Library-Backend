@@ -13,7 +13,6 @@ export const createReader = async (req: Request, res: Response) => {
       email,
       phone,
       address,
-      role: UserRole.Reader,
     });
 
     await user.save();

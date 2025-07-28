@@ -17,7 +17,7 @@ const UserSchema = new Schema({
   profilePictureUrl: { type: String, default: null },
   activeStatus: {
     type: Number,
-    enum: Object.values(ActiveStatus),
+    enum: Object.values(ActiveStatus).filter((v) => typeof v === "number"),
     default: ActiveStatus.Active,
   },
   createdOn: { type: Date, default: Date.now },
