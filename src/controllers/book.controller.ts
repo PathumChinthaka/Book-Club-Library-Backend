@@ -22,13 +22,31 @@ export const getBooks = async (
   next: NextFunction
 ) => {
   try {
-    const { page = 1, pageSize = 10, title, author, category } = req.query;
+    const {
+      page = 1,
+      pageSize = 10,
+      title,
+      author,
+      category,
+      search,
+    } = req.query;
 
     const query: any = {};
 
     if (title) query.title = { $regex: title, $options: "i" };
     if (author) query.author = { $regex: author, $options: "i" };
     if (category) query.category = { $regex: category, $options: "i" };
+
+    if (search) {
+      const regex = new RegExp(search as string, "i");
+      query.$or = [
+        { title: regex },
+        { author: regex },
+        { category: regex },
+        { publisher: regex },
+        { publicationYear: isNaN(Number(search)) ? undefined : Number(search) },
+      ].filter(Boolean); 
+    }
 
     const skip = (Number(page) - 1) * Number(pageSize);
 

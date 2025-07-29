@@ -56,3 +56,45 @@ export const getLendingList = async (_req: Request, res: Response, next: NextFun
     next(err);
   }
 };
+
+export const getOverdueReaders = async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+
+    const overdueLendings = await Lending.find({
+      dueDate: { $lt: now },
+      returnedDate: null,
+    })
+      .populate("readerId", "_id firstName lastName email")
+      .populate("bookId", "title");
+
+    const readerMap: Record<string, any> = {};
+
+    overdueLendings.forEach((lending) => {
+      const reader = lending.readerId as any;
+      const book = lending.bookId as any;
+      const readerId = reader._id.toString();
+
+      if (!readerMap[readerId]) {
+        readerMap[readerId] = {
+          readerId: readerId,
+          name: `${reader.firstName} ${reader.lastName}`,
+          email: reader.email,
+          books: [],
+        };
+      }
+
+      readerMap[readerId].books.push({
+        lendingId: lending._id,
+        title: book.title,
+        dueDate: lending.dueDate,
+        reminderSent: lending.reminderSent,
+      });
+    });
+
+    const readersWithOverdueBooks = Object.values(readerMap);
+    res.status(200).json(readersWithOverdueBooks);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching overdue readers", err });
+  }
+};

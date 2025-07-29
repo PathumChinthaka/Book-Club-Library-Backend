@@ -5,7 +5,8 @@ const LendingSchema = new Schema({
   bookId: { type: Types.ObjectId, ref: 'Book', required: true },
   borrowedAt: { type: Date, default: Date.now },
   dueDate: { type: Date, required: true },
-  returnedDate: { type: Date, default: null }
+  returnedDate: { type: Date, default: null },
+  reminderSent: { type: Boolean, default: false }
 });
 
 export const Lending = model('Lending', LendingSchema);

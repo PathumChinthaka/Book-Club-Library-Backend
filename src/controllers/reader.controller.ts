@@ -27,7 +27,14 @@ export const createReader = async (req: Request, res: Response) => {
 
 export const getAllReaders = async (req: Request, res: Response) => {
   try {
-    const { page = 1, pageSize = 10, firstName, lastName, email } = req.query;
+    const {
+      page = 1,
+      pageSize = 10,
+      firstName,
+      lastName,
+      email,
+      search,
+    } = req.query;
 
     const query: any = {
       role: UserRole.Reader,
@@ -37,6 +44,16 @@ export const getAllReaders = async (req: Request, res: Response) => {
     if (firstName) query.firstName = { $regex: firstName, $options: "i" };
     if (lastName) query.lastName = { $regex: lastName, $options: "i" };
     if (email) query.email = { $regex: email, $options: "i" };
+
+    if (search) {
+      const regex = new RegExp(search as string, "i");
+      query.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { email: regex },
+        { phone: regex },
+      ].filter(Boolean);
+    }
 
     const skip = (Number(page) - 1) * Number(pageSize);
 
