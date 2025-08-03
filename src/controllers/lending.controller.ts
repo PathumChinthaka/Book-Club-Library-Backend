@@ -1,34 +1,51 @@
-import { Request, Response, NextFunction } from 'express';
-import { Lending } from '../models/Lending';
-import { Book } from '../models/Book';
-import { ThrowError } from '../util/error/error';
+import { Request, Response, NextFunction } from "express";
+import { Lending } from "../models/Lending";
+import { Book } from "../models/Book";
+import { ThrowError } from "../util/error/error";
+import { User } from "../models/User";
 
-export const lendBook = async (req: Request, res: Response, next: NextFunction) => {
+export const lendBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { readerId, bookId, dueDate } = req.body;
 
+    const reader = await User.findById(readerId);
+
+    if (!reader) throw new ThrowError("Reader not found", 404);
+
     const book = await Book.findById(bookId);
-    if (!book) throw new ThrowError('Book not found', 404);
-    if (book.copiesAvailable < 1) throw new ThrowError('No available copies', 400);
+    if (!book) throw new ThrowError("Book not found", 404);
+
+    if (book.copiesAvailable < 1)
+      throw new ThrowError("No available copies", 400);
 
     const lending = await Lending.create({ readerId, bookId, dueDate });
 
     book.copiesAvailable -= 1;
     await book.save();
 
-    res.status(201).json({ message: 'Book lent successfully', lending });
+    res.status(201).json({ message: "Book lent successfully", lending });
   } catch (err) {
     next(err);
   }
 };
 
-export const returnBook = async (req: Request, res: Response, next: NextFunction) => {
+export const returnBook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { lendingId } = req.params;
 
     const lending = await Lending.findById(lendingId);
-    if (!lending) throw new ThrowError('Lending record not found', 404);
-    if (lending.returnedDate) throw new ThrowError('Book already returned', 400);
+    if (!lending) throw new ThrowError("Lending record not found", 404);
+
+    if (lending.returnedDate)
+      throw new ThrowError("Book already returned", 400);
 
     lending.returnedDate = new Date();
     await lending.save();
@@ -39,19 +56,70 @@ export const returnBook = async (req: Request, res: Response, next: NextFunction
       await book.save();
     }
 
-    res.status(200).json({ message: 'Book returned successfully', lending });
+    res.status(200).json({ message: "Book returned successfully", lending });
   } catch (err) {
     next(err);
   }
 };
 
-export const getLendingList = async (_req: Request, res: Response, next: NextFunction) => {
+export const getLendingList = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const lendings = await Lending.find()
-      .populate('readerId', 'firstName lastName email')
-      .populate('bookId', 'title isbn');
+    const { page = 1, pageSize = 10, search = "" } = req.query;
 
-    res.json({ lendings });
+    const skip = (Number(page) - 1) * Number(pageSize);
+
+    const lendings = await Lending.find()
+      .populate({
+        path: "readerId",
+        select: "firstName lastName email",
+        match: {
+          $or: [
+            { firstName: { $regex: search as string, $options: "i" } },
+            { lastName: { $regex: search as string, $options: "i" } },
+            { email: { $regex: search as string, $options: "i" } },
+          ],
+        },
+      })
+      .populate({
+        path: "bookId",
+        select: "title isbn",
+        match: {
+          $or: [
+            { title: { $regex: search as string, $options: "i" } },
+            { isbn: { $regex: search as string, $options: "i" } },
+          ],
+        },
+      })
+      .skip(skip)
+      .limit(Number(pageSize))
+      .sort({ borrowedAt: -1 })
+      .lean();
+
+    const filtered = lendings.filter((l) => l.readerId && l.bookId);
+
+    const renamed = filtered.map((lending) => ({
+      _id: lending._id,
+      reader: lending.readerId,
+      book: lending.bookId,
+      borrowedAt: lending.borrowedAt,
+      dueDate: lending.dueDate,
+      returnedDate: lending.returnedDate,
+      reminderSent: lending.reminderSent,
+    }));
+
+    const total = await Lending.countDocuments();
+
+    res.json({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      data: renamed,
+      total,
+      totalPages: Math.ceil(total / Number(pageSize)),
+    });
   } catch (err) {
     next(err);
   }

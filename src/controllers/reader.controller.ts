@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { Reader } from "../models/Reader";
 import { User } from "../models/User";
 import { UserRole } from "../types/enum/userRole.enum";
 import { ActiveStatus } from "../types/enum/activeStatusEnum";
