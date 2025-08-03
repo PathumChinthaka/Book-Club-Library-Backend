@@ -3,6 +3,10 @@ import { Lending } from "../models/Lending";
 import { Book } from "../models/Book";
 import { ThrowError } from "../util/error/error";
 import { User } from "../models/User";
+import { sendEmail } from "../service/mail/mail.service";
+import fs from "fs";
+import path from "path";
+import { format } from "date-fns";
 
 export const lendBook = async (
   req: Request,
@@ -164,5 +168,52 @@ export const getOverdueReaders = async (req: Request, res: Response) => {
     res.status(200).json(readersWithOverdueBooks);
   } catch (err) {
     res.status(500).json({ message: "Error fetching overdue readers", err });
+  }
+};
+
+export const sendLendingReminder = async (req: Request, res: Response) => {
+  try {
+    const { lendingId } = req.params;
+
+    const lendingReminderTemplate = fs.readFileSync(
+      path.join(__dirname, "..", "templates", "OverdueBooksReminder.html"),
+      "utf-8"
+    );
+
+    const lending = await Lending.findById(lendingId)
+      .populate("readerId", "firstName lastName email")
+      .populate("bookId", "title");
+
+    if (!lending || !lending.readerId || !lending.bookId) {
+      return res.status(404).json({ message: "Lending record not found" });
+    }
+
+    if (lending.reminderSent) {
+      return res.status(400).json({ message: "Reminder already sent" });
+    }
+
+    const reader = lending.readerId as any;
+    const book = lending.bookId as any;
+
+    const html = lendingReminderTemplate
+      .replace("{{readerName}}", `${reader.firstName} ${reader.lastName}`)
+      .replace("{{bookTitle}}", book.title)
+      .replace("{{year}}", "2025")
+      .replace("{{dueDate}}", format(new Date(lending.dueDate), "yyyy-MM-dd"));
+
+    await sendEmail(
+      reader.email,
+      "📚 Book Club - Overdue Book Reminder",
+      `Dear ${reader.firstName}, please return your overdue book.`,
+      html
+    );
+
+    lending.reminderSent = true;
+    await lending.save();
+
+    res.status(200).json({ message: "Reminder sent successfully" });
+  } catch (error) {
+    console.error("Error sending reminder:", error);
+    res.status(500).json({ message: "Failed to send reminder", error });
   }
 };
