@@ -24,7 +24,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     await user.save();
 
-    res.status(201).json({ message: "User registered successfully." });
+    res.status(201).json({ id: user?._id });
   } catch (error) {
     res.status(400).json({ message: "Error registering user", error });
   }
@@ -54,6 +54,7 @@ export const userLogin = async (req: Request, res: Response) => {
     res.json({
       accessToken,
       user: {
+        id: user?._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -87,6 +88,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     res.json({
       accessToken: newAccessToken,
       user: {
+        id: user?._id,
         firstName: user?.firstName,
         lastName: user?.lastName,
         email: user?.email,
