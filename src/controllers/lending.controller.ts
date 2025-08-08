@@ -73,39 +73,36 @@ export const getLendingList = async (
 ) => {
   try {
     const { page = 1, pageSize = 10, search = "" } = req.query;
-
     const skip = (Number(page) - 1) * Number(pageSize);
 
-    const lendings = await Lending.find()
-      .populate({
-        path: "readerId",
-        select: "firstName lastName email",
-        match: {
-          $or: [
-            { firstName: { $regex: search as string, $options: "i" } },
-            { lastName: { $regex: search as string, $options: "i" } },
-            { email: { $regex: search as string, $options: "i" } },
-          ],
-        },
-      })
-      .populate({
-        path: "bookId",
-        select: "title isbn",
-        match: {
-          $or: [
-            { title: { $regex: search as string, $options: "i" } },
-            { isbn: { $regex: search as string, $options: "i" } },
-          ],
-        },
-      })
+    const regex = new RegExp(search as string, "i");
+
+    let query: any = {};
+
+    if (search) {
+      const matchingReaders = await User.find({
+        $or: [{ firstName: regex }, { lastName: regex }, { email: regex }],
+      }).select("_id");
+
+      const matchingBooks = await Book.find({
+        $or: [{ title: regex }, { isbn: regex }],
+      }).select("_id");
+
+      query.$or = [
+        { readerId: { $in: matchingReaders.map((r) => r._id) } },
+        { bookId: { $in: matchingBooks.map((b) => b._id) } },
+      ];
+    }
+
+    const lendings = await Lending.find(query)
+      .populate({ path: "readerId", select: "firstName lastName email" })
+      .populate({ path: "bookId", select: "title isbn" })
       .skip(skip)
       .limit(Number(pageSize))
       .sort({ borrowedAt: -1 })
       .lean();
 
-    const filtered = lendings.filter((l) => l.readerId && l.bookId);
-
-    const renamed = filtered.map((lending) => ({
+    const renamed = lendings.map((lending) => ({
       _id: lending._id,
       reader: lending.readerId,
       book: lending.bookId,
@@ -115,7 +112,7 @@ export const getLendingList = async (
       reminderSent: lending.reminderSent,
     }));
 
-    const total = await Lending.countDocuments();
+    const total = await Lending.countDocuments(query);
 
     res.json({
       page: Number(page),
