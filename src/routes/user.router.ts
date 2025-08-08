@@ -10,6 +10,6 @@ const router = express.Router();
 
 router.get("/:id", getUserById);
 router.put("/:id", updateUserById);
-router.put("/:id/profile-picture", upload.single("file"), uploadProfilePicture);
+router.post("/:id/profile-picture:upload", upload.single("file"), uploadProfilePicture);
 
 export default router;

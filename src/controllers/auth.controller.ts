@@ -60,6 +60,7 @@ export const userLogin = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         createdOn: user.createdOn,
+        profilePictureUrl: user.profilePictureUrl
       },
     });
   } catch (error) {
@@ -94,6 +95,7 @@ export const refreshToken = async (req: Request, res: Response) => {
         email: user?.email,
         role: user?.role,
         createdOn: user?.createdOn,
+        profilePictureUrl: user.profilePictureUrl
       },
     });
   } catch (error) {
